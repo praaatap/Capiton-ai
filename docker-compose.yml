@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  # Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: subtitle_user
+      POSTGRES_PASSWORD: subtitle_password
+      POSTGRES_DB: subtitle_ai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U subtitle_user -d subtitle_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cache
   redis:
     image: redis:7-alpine
     ports:
@@ -14,5 +32,47 @@ services:
       timeout: 5s
       retries: 5
 
+  # Backend API
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://subtitle_user:subtitle_password@db:5432/subtitle_ai
+      - REDIS_URL=redis://redis:6379
+      # Pass through other env vars from .env file
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+      - R2_BUCKET_NAME=${R2_BUCKET_NAME}
+      - R2_PUBLIC_DOMAIN=${R2_PUBLIC_DOMAIN}
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/exports:/app/exports
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Frontend App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    depends_on:
+      - backend
+
 volumes:
+  postgres_data:
   redis_data:
