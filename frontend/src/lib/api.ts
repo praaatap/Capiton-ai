@@ -245,6 +245,147 @@ class ApiClient {
     }> {
         return this.fetch(`/api/video/${videoId}/is-portrait`);
     }
+
+    // ===== User endpoints =====
+    async getUserProfile(): Promise<{
+        id: string;
+        name: string;
+        email: string;
+        avatar: string | null;
+        plan: string;
+        created_at: string;
+        storage_used_mb: number;
+        storage_limit_mb: number;
+    }> {
+        return this.fetch('/api/user/profile');
+    }
+
+    async updateUserProfile(data: { name?: string; email?: string }): Promise<{ success: boolean; message: string }> {
+        return this.fetch('/api/user/profile', { method: 'PUT', body: JSON.stringify(data) });
+    }
+
+    async getUserSettings(): Promise<{
+        notifications: { email_notifications: boolean; export_complete: boolean; weekly_digest: boolean; product_updates: boolean };
+        preferences: { default_language: string; default_subtitle_style: string; auto_generate_subtitles: boolean };
+    }> {
+        return this.fetch('/api/user/settings');
+    }
+
+    async updateUserSettings(data: object): Promise<{ success: boolean; message: string }> {
+        return this.fetch('/api/user/settings', { method: 'PUT', body: JSON.stringify(data) });
+    }
+
+    async getUsageStats(): Promise<{
+        total_videos: number;
+        total_minutes_processed: number;
+        total_exports: number;
+        total_subtitles_generated: number;
+        languages_used: string[];
+    }> {
+        return this.fetch('/api/user/usage');
+    }
+
+    async getSubscription(): Promise<{
+        plan: string;
+        status: string;
+        limits: { videos_per_month: number; max_duration_minutes: number; storage_gb: number };
+        usage: { videos_this_month: number; exports_this_month: number };
+    }> {
+        return this.fetch('/api/user/subscription');
+    }
+
+    // ===== Templates endpoints =====
+    async listTemplates(): Promise<Array<{
+        id: string;
+        name: string;
+        description: string;
+        style: SubtitleStyle;
+        is_default: boolean;
+        is_favorite: boolean;
+        is_system: boolean;
+    }>> {
+        return this.fetch('/api/templates/');
+    }
+
+    async getDefaultTemplate(): Promise<{ id: string; name: string; style: SubtitleStyle }> {
+        return this.fetch('/api/templates/default');
+    }
+
+    async createTemplate(data: { name: string; description?: string; style: SubtitleStyle }): Promise<{ id: string; name: string }> {
+        return this.fetch('/api/templates/', { method: 'POST', body: JSON.stringify(data) });
+    }
+
+    async updateTemplate(templateId: string, data: object): Promise<{ success: boolean }> {
+        return this.fetch(`/api/templates/${templateId}`, { method: 'PUT', body: JSON.stringify(data) });
+    }
+
+    async deleteTemplate(templateId: string): Promise<{ success: boolean; message: string }> {
+        return this.fetch(`/api/templates/${templateId}`, { method: 'DELETE' });
+    }
+
+    async duplicateTemplate(templateId: string): Promise<{ id: string; name: string }> {
+        return this.fetch(`/api/templates/${templateId}/duplicate`, { method: 'POST' });
+    }
+
+    // ===== Analytics endpoints =====
+    async getAnalyticsDashboard(timeRange: string = '30d'): Promise<{
+        stats: Array<{ title: string; value: string; change: number; trend: string }>;
+        activity: Array<{ date: string; value: number }>;
+        languages: Array<{ language: string; count: number; percentage: number }>;
+        recent_exports: Array<{ id: string; filename: string; duration: string; size: string; exported_at: string }>;
+    }> {
+        return this.fetch(`/api/analytics/dashboard?time_range=${timeRange}`);
+    }
+
+    async getVideoAnalytics(timeRange: string = '30d'): Promise<object> {
+        return this.fetch(`/api/analytics/videos?time_range=${timeRange}`);
+    }
+
+    async getSubtitleAnalytics(timeRange: string = '30d'): Promise<object> {
+        return this.fetch(`/api/analytics/subtitles?time_range=${timeRange}`);
+    }
+
+    async getUsageAnalytics(): Promise<{
+        videos: { used: number; limit: number; percentage: number };
+        minutes: { used: number; limit: number; percentage: number };
+        storage: { used_gb: number; limit_gb: number; percentage: number };
+    }> {
+        return this.fetch('/api/analytics/usage');
+    }
+
+    // ===== Notifications endpoints =====
+    async listNotifications(unreadOnly: boolean = false): Promise<Array<{
+        id: string;
+        type: string;
+        category: string;
+        title: string;
+        message: string;
+        read: boolean;
+        action_url: string | null;
+        created_at: string;
+    }>> {
+        return this.fetch(`/api/notifications/?unread_only=${unreadOnly}`);
+    }
+
+    async getUnreadCount(): Promise<{ count: number }> {
+        return this.fetch('/api/notifications/unread-count');
+    }
+
+    async markNotificationsRead(notificationIds: string[]): Promise<{ success: boolean; marked_count: number }> {
+        return this.fetch('/api/notifications/mark-read', { method: 'POST', body: JSON.stringify({ notification_ids: notificationIds }) });
+    }
+
+    async markAllNotificationsRead(): Promise<{ success: boolean; message: string }> {
+        return this.fetch('/api/notifications/mark-all-read', { method: 'POST' });
+    }
+
+    async deleteNotification(notificationId: string): Promise<{ success: boolean; message: string }> {
+        return this.fetch(`/api/notifications/${notificationId}`, { method: 'DELETE' });
+    }
+
+    async clearAllNotifications(): Promise<{ success: boolean; message: string }> {
+        return this.fetch('/api/notifications/', { method: 'DELETE' });
+    }
 }
 
 export const api = new ApiClient();

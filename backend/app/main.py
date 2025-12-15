@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from app.config import get_settings
-from app.api.routes import video, subtitle, chat, auth
+from app.api.routes import video, subtitle, chat, auth, user, templates, analytics, notifications
 from app.services.cache_service import cache_service
 from app.database import init_db
 
@@ -52,6 +52,10 @@ app.include_router(auth.router, prefix=settings.API_PREFIX)
 app.include_router(video.router, prefix=settings.API_PREFIX)
 app.include_router(subtitle.router, prefix=settings.API_PREFIX)
 app.include_router(chat.router, prefix=settings.API_PREFIX)
+app.include_router(user.router)
+app.include_router(templates.router)
+app.include_router(analytics.router)
+app.include_router(notifications.router)
 
 
 @app.get("/")

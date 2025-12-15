@@ -1,6 +1,19 @@
-# SubtitleAI - Chat-Based Video Editor
+# SubtitleAI - Complete SaaS Video Captioning Platform
 
-A full-stack video editing application with AI-powered subtitle generation. Upload videos, generate accurate English subtitles automatically, and export videos with burned-in captions.
+A full-stack video editing application with AI-powered subtitle generation. Upload videos, generate accurate subtitles automatically, translate to 100+ languages, and export videos with burned-in captions.
+
+## 🚀 Features
+
+- **AI Subtitle Generation** - Whisper-powered transcription with 95%+ accuracy
+- **Multi-Language Translation** - Translate subtitles to 100+ languages
+- **AI Chat Editor** - Natural language commands for editing
+- **HD Video Export** - Export with burned-in subtitles up to 4K
+- **Subtitle Templates** - Pre-built and custom style templates
+- **Analytics Dashboard** - Track usage, exports, and performance
+- **User Settings** - Profile, preferences, and billing management
+- **Real-time Notifications** - Activity alerts and status updates
+- **Activity History** - Full audit trail of all operations
+- **Pricing & Subscriptions** - Tiered plans (Free, Pro, Enterprise)
 
 ---
 
@@ -12,13 +25,14 @@ A full-stack video editing application with AI-powered subtitle generation. Uplo
 4. [Backend Documentation](#backend-documentation)
 5. [Frontend Documentation](#frontend-documentation)
 6. [API Reference](#api-reference)
-7. [Database Schema](#database-schema)
-8. [Authentication Flow](#authentication-flow)
-9. [Subtitle Generation Workflow](#subtitle-generation-workflow)
-10. [Video Export Pipeline](#video-export-pipeline)
-11. [Environment Variables](#environment-variables)
-12. [Installation Guide](#installation-guide)
-13. [Deployment Guide](#deployment-guide)
+7. [New SaaS Features](#new-saas-features)
+8. [Database Schema](#database-schema)
+9. [Authentication Flow](#authentication-flow)
+10. [Subtitle Generation Workflow](#subtitle-generation-workflow)
+11. [Video Export Pipeline](#video-export-pipeline)
+12. [Environment Variables](#environment-variables)
+13. [Installation Guide](#installation-guide)
+14. [Deployment Guide](#deployment-guide)
 
 ---
 
