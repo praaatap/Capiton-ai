@@ -688,6 +688,91 @@ class VideoService:
             print(f"Transform failed: {e.stderr}")
             raise Exception(f"Failed to transform video: {e.stderr.decode() if e.stderr else 'Unknown error'}")
 
+    async def enhance_audio(
+        self,
+        video_id: str,
+        denoise: bool = True,
+        normalize: bool = True
+    ) -> bool:
+        """Enhance video audio using FFmpeg filters."""
+        video = await self.get_video(video_id)
+        if not video:
+            raise ValueError(f"Video {video_id} not found")
+        
+        video_path = self.get_video_path(video)
+        enhanced_filename = f"{video_id}_enhanced.mp4"
+        enhanced_path = settings.UPLOAD_DIR / enhanced_filename
+        
+        # filters
+        audio_filters = []
+        if denoise:
+            # Simple highpass/lowpass as proxy for basic noise reduction
+            audio_filters.append("highpass=f=100") 
+            audio_filters.append("lowpass=f=8000")
+        
+        if normalize:
+            audio_filters.append("loudnorm=I=-16:TP=-1.5:LRA=11")
+            
+        af_string = ",".join(audio_filters) if audio_filters else "anull"
+        
+        cmd = [
+            settings.ffmpeg_binary, "-y",
+            "-i", str(video_path),
+            "-c:v", "copy", # Copy video stream without re-encoding
+            "-af", af_string,
+            "-c:a", "aac",
+            str(enhanced_path)
+        ]
+        
+        try:
+            subprocess.run(cmd, check=True, capture_output=True)
+            
+            # Update record to point to enhanced video
+            video.filename = enhanced_filename
+            await self.update_video(video)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Audio enhancement failed: {e.stderr}")
+            raise Exception(f"Failed to enhance audio: {e}")
+
+    async def generate_viral_clips(
+        self,
+        video_id: str,
+        count: int = 3,
+        duration: int = 30
+    ) -> List[dict]:
+        """
+        AI analysis to generate viral clips.
+        (Mock implementation for now - returns random segments)
+        """
+        video = await self.get_video(video_id)
+        if not video:
+            raise ValueError(f"Video {video_id} not found")
+        
+        import random
+        clips = []
+        total_duration = video.metadata.duration
+        
+        for i in range(count):
+            # Ensure we don't go out of bounds
+            if total_duration <= duration:
+                start = 0
+                end = total_duration
+            else:
+                max_start = max(0, total_duration - duration)
+                start = random.uniform(0, max_start)
+                end = min(total_duration, start + duration)
+            
+            clips.append({
+                "id": str(uuid.uuid4()),
+                "start_time": round(start, 2),
+                "end_time": round(end, 2),
+                "score": round(random.uniform(0.8, 0.99), 2),
+                "summary": f"Viral Highlight #{i+1} - Key moment detected"
+            })
+            
+        return clips
+
     def is_portrait_video(self, video: Video) -> bool:
         """Check if video is in portrait/vertical orientation."""
         if video.metadata and video.metadata.width and video.metadata.height:

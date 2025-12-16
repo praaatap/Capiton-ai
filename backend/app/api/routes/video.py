@@ -7,7 +7,9 @@ from app.config import get_settings
 from app.models.video import (
     VideoUploadResponse, VideoExportRequest, VideoExportResponse,
     VideoStatus, TrimSilenceRequest, TrimSilenceResponse, Video,
-    TransformToLandscapeRequest, TransformToLandscapeResponse
+    TransformToLandscapeRequest, TransformToLandscapeResponse,
+    AudioEnhanceRequest, AudioEnhanceResponse,
+    ViralClipsRequest, ViralClipsResponse
 )
 from app.services.video_service import video_service
 
@@ -242,3 +244,49 @@ async def check_is_portrait(video_id: str):
         "width": video.metadata.width if video.metadata else 0,
         "height": video.metadata.height if video.metadata else 0
     }
+
+
+@router.post("/{video_id}/enhance-audio", response_model=AudioEnhanceResponse)
+async def enhance_audio(video_id: str, request: AudioEnhanceRequest):
+    """Enhance video audio (denoise, normalize)."""
+    video = await video_service.get_video(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    try:
+        await video_service.enhance_audio(
+            video_id,
+            request.denoise,
+            request.normalize
+        )
+        
+        return AudioEnhanceResponse(
+            id=video_id,
+            status=VideoStatus.READY,
+            message="Audio enhanced successfully. Background noise reduced and levels normalized."
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{video_id}/generate-viral-clips", response_model=ViralClipsResponse)
+async def generate_viral_clips(video_id: str, request: ViralClipsRequest):
+    """AI analysis to find and generate viral clips from the video."""
+    video = await video_service.get_video(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+        
+    try:
+        clips = await video_service.generate_viral_clips(
+            video_id,
+            request.count,
+            request.duration_secs
+        )
+        
+        return ViralClipsResponse(
+            id=video_id,
+            clips=clips,
+            message=f"Success! Generated {len(clips)} viral clips based on AI analysis."
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

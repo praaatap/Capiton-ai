@@ -191,6 +191,105 @@ async def delete_subtitle(video_id: str, segment_id: str):
     }
 
 
+class ShiftSubtitlesRequest(BaseModel):
+    """Request to shift all subtitles by a time offset."""
+    time_offset: float  # Seconds (positive or negative)
+
+
+class MergeSubtitlesRequest(BaseModel):
+    """Request to merge two subtitle segments."""
+    segment_id_1: str
+    segment_id_2: str
+    separator: str = " "
+
+
+@router.post("/{video_id}/shift")
+async def shift_subtitles(video_id: str, request: ShiftSubtitlesRequest):
+    """Shift all subtitles by a specific time (synchronization)."""
+    video = await video_service.get_video(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    if not video.subtitles:
+        raise HTTPException(status_code=400, detail="No subtitles to shift")
+    
+    offset = request.time_offset
+    max_duration = video.metadata.duration if video.metadata else 3600.0
+    
+    updated_count = 0
+    valid_subtitles = []
+    
+    for sub in video.subtitles:
+        new_start = sub.start_time + offset
+        new_end = sub.end_time + offset
+        
+        # Ensure valid times
+        if new_end > 0 and new_start < max_duration:
+            sub.start_time = max(0.0, new_start)
+            sub.end_time = min(max_duration, new_end)
+            valid_subtitles.append(sub)
+            updated_count += 1
+            
+    video.subtitles = valid_subtitles
+    await video_service.update_video(video)
+    
+    return {
+        "video_id": video_id,
+        "shift_offset": offset,
+        "updated_count": updated_count,
+        "message": f"Shifted {updated_count} subtitles by {offset}s"
+    }
+
+
+@router.post("/{video_id}/merge")
+async def merge_subtitles(video_id: str, request: MergeSubtitlesRequest):
+    """Merge two subtitle segments into one."""
+    video = await video_service.get_video(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # optimize lookup
+    sub_map = {s.id: i for i, s in enumerate(video.subtitles)}
+    
+    if request.segment_id_1 not in sub_map or request.segment_id_2 not in sub_map:
+        raise HTTPException(status_code=404, detail="One or both subtitle segments not found")
+    
+    idx1 = sub_map[request.segment_id_1]
+    idx2 = sub_map[request.segment_id_2]
+    
+    # Ensure order
+    if idx1 > idx2:
+        idx1, idx2 = idx2, idx1
+        
+    sub1 = video.subtitles[idx1]
+    sub2 = video.subtitles[idx2]
+    
+    # Create merged segment
+    merged_sub = SubtitleSegment(
+        id=sub1.id, # Keep ID of first
+        start_time=min(sub1.start_time, sub2.start_time),
+        end_time=max(sub1.end_time, sub2.end_time),
+        text=f"{sub1.text}{request.separator}{sub2.text}",
+        style=sub1.style # Inherit style from first
+    )
+    
+    # Remove old ones and insert new
+    # Remove higher index first to not shift lower index
+    video.subtitles.pop(idx2)
+    video.subtitles.pop(idx1)
+    
+    # Insert at idx1
+    video.subtitles.insert(idx1, merged_sub)
+    
+    await video_service.update_video(video)
+    
+    return {
+        "video_id": video_id,
+        "merged_segment": merged_sub.model_dump(),
+        "message": "Subtitles merged successfully"
+    }
+
+
 class TranslateRequest(BaseModel):
     """Request for subtitle translation."""
     target_language: str = "Hindi"
@@ -233,3 +332,4 @@ async def get_supported_languages():
     return {
         "languages": SUPPORTED_LANGUAGES
     }
+

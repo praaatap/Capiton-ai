@@ -114,3 +114,40 @@ class TransformToLandscapeResponse(BaseModel):
     new_width: int
     new_height: int
     message: str
+
+
+class AudioEnhanceRequest(BaseModel):
+    """Request for audio enhancements."""
+    denoise: bool = True
+    normalize: bool = True
+    remove_clicks: bool = True
+
+
+class AudioEnhanceResponse(BaseModel):
+    """Response after audio enhancement."""
+    id: str
+    status: VideoStatus
+    message: str
+
+
+class ViralClipsRequest(BaseModel):
+    """Request to generate viral short clips."""
+    count: int = 3
+    duration_secs: int = 30
+    focus_topic: Optional[str] = None
+
+
+class ViralClip(BaseModel):
+    """Details of a generated viral clip."""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    start_time: float
+    end_time: float
+    score: float  # Virality score 0-1
+    summary: str
+
+
+class ViralClipsResponse(BaseModel):
+    """Response with generated clips."""
+    id: str
+    clips: List[ViralClip]
+    message: str
