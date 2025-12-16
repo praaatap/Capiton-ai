@@ -17,7 +17,8 @@ class SubtitleService:
         self,
         video_path: str,
         video_id: str,
-        default_style: Optional[SubtitleStyle] = None
+        default_style: Optional[SubtitleStyle] = None,
+        language: str = "en"
     ) -> List[SubtitleSegment]:
         """Generate subtitles from video using Groq Whisper."""
         import json as json_lib
@@ -70,7 +71,7 @@ class SubtitleService:
         # Use Groq Whisper API (whisper-large-v3)
         if settings.GROQ_API_KEY:
             try:
-                subtitles = await self._generate_with_groq(str(audio_path), default_style, video_duration)
+                subtitles = await self._generate_with_groq(str(audio_path), default_style, video_duration, language)
                 self._cleanup_audio(audio_path)
                 if subtitles:
                     return subtitles
@@ -96,25 +97,26 @@ class SubtitleService:
         self,
         audio_path: str,
         default_style: SubtitleStyle,
-        video_duration: float = 30.0
+        video_duration: float = 30.0,
+        language: str = "en"
     ) -> List[SubtitleSegment]:
-        """Generate English subtitles using Groq Whisper API (whisper-large-v3)."""
+        """Generate subtitles using Groq Whisper API (whisper-large-v3)."""
         from groq import Groq
         import re
         
         client = Groq(api_key=settings.GROQ_API_KEY)
         
-        print(f"🎤 Transcribing with Groq whisper-large-v3 (English only)...")
+        print(f"🎤 Transcribing with Groq whisper-large-v3 (Language: {language})...")
         print(f"📊 Video duration: {video_duration:.1f}s")
         
         try:
-            # Use English language explicitly
+            # Use specified language
             with open(audio_path, "rb") as audio_file:
                 response = client.audio.transcriptions.create(
                     model="whisper-large-v3",
                     file=audio_file,
                     response_format="verbose_json",
-                    language="en"  # English only
+                    language=language  # Use requested language
                 )
             
             print(f"📊 Response received. Text length: {len(response.text) if hasattr(response, 'text') else 0}")

@@ -13,6 +13,7 @@ router = APIRouter(prefix="/subtitle", tags=["Subtitle"])
 class GenerateSubtitlesRequest(BaseModel):
     """Request for subtitle generation."""
     default_style: Optional[SubtitleStyle] = None
+    language: str = "en"  # Language code (e.g., en, hi, es)
 
 
 class UpdateSubtitleRequest(BaseModel):
@@ -43,10 +44,13 @@ async def generate_subtitles(video_id: str, request: GenerateSubtitlesRequest = 
     
     try:
         default_style = request.default_style if request else None
+        language = request.language if request else "en"
+        
         subtitles = await subtitle_service.generate_subtitles(
             str(video_path),
             video_id,
-            default_style
+            default_style,
+            language
         )
         
         # Update video with subtitles
